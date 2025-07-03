@@ -1,0 +1,1 @@
+Quero que você programe este aplicativo web com as melhores trilhas do Japão para mim. Use o Leaflet.JS para o mapa interativo. Quero uma interface elegante, minimalista, em modo escuro, usando apenas preto e branco. A saída deve ser um único arquivo HTML autônomo
