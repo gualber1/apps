@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trilhas de Fernando de Noronha</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+            height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .trail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .trail-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .trail-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: #0ea5e9;
+        }
+
+        .trail-card.active {
+            border-color: #0ea5e9;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        }
+
+        .trail-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .trail-description {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .trail-info {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .trail-info span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .difficulty {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .difficulty.facil {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .difficulty.moderada {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .difficulty.dificil {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .map-container {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            min-height: 600px;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .legend h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+
+        .info-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .info-panel p {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 12px;
+        }
+
+        .info-panel .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .sidebar {
+                padding: 24px;
+            }
+
+            #map {
+                min-height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .sidebar {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .legend, .info-panel {
+                position: relative;
+                top: auto;
+                right: auto;
+                bottom: auto;
+                left: auto;
+                margin: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>Trilhas de Fernando de Noronha</h1>
+                <p>Descubra as melhores trilhas do paraíso brasileiro</p>
+            </div>
+            
+            <div class="trail-list" id="trailList">
+                <!-- Trilhas serão inseridas aqui via JavaScript -->
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="legend">
+                <h3>Legenda</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #0ea5e9;"></div>
+                    <span>Trilha Fácil</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f59e0b;"></div>
+                    <span>Trilha Moderada</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ef4444;"></div>
+                    <span>Trilha Difícil</span>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel">
+                <button class="close-btn" onclick="closeInfoPanel()">&times;</button>
+                <h3 id="infoPanelTitle"></h3>
+                <p id="infoPanelDescription"></p>
+                <div id="infoPanelDetails"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+
+    <script>
+        // Dados das trilhas de Fernando de Noronha
+        const trilhas = [
+            {
+                id: 1,
+                nome: "Trilha da Baía dos Golfinhos",
+                descricao: "Mirante suspenso com vista panorâmica para observar golfinhos rotadores nas primeiras horas da manhã.",
+                coordenadas: [-3.8536, -32.4297],
+                dificuldade: "facil",
+                duracao: "30 min",
+                distancia: "500m",
+                detalhes: "Trilha suspensa acessível com plataforma de madeira. Melhor horário: 6h às 8h da manhã. Agendamento obrigatório no Centro de Visitantes."
+            },
+            {
+                id: 2,
+                nome: "Trilha da Atalaia",
+                descricao: "Acesso às famosas piscinas naturais do Mar de Fora. Disponível em versão curta (autoguiada) e longa (com guia).",
+                coordenadas: [-3.8789, -32.4089],
+                dificuldade: "facil",
+                duracao: "45 min",
+                distancia: "800m",
+                detalhes: "Duas opções: trilha curta (autoguiada) e trilha longa (guia obrigatório). Chegada 30 min antes no portão da Vila dos Trinta. Agendamento obrigatório."
+            },
+            {
+                id: 3,
+                nome: "Trilha Costa dos Mirantes",
+                descricao: "Caminhada por seis mirantes incríveis incluindo Sancho, Golfinhos e Dois Irmãos, com passarelas suspensas.",
+                coordenadas: [-3.8456, -32.4234],
+                dificuldade: "facil",
+                duracao: "2-3h",
+                distancia: "2.5km",
+                detalhes: "Percurso por passarelas suspensas visitando 6 mirantes. Pode terminar na Praia do Sancho. Rica observação de aves. Agendamento obrigatório."
+            },
+            {
+                id: 4,
+                nome: "Trilha do Capim Açu",
+                descricao: "A trilha mais longa do Parque Nacional, passando pelo Farol da Sapata e terminando na Praia do Leão.",
+                coordenadas: [-3.8623, -32.4156],
+                dificuldade: "dificil",
+                duracao: "4-5h",
+                distancia: "7km",
+                detalhes: "Trilha mais longa e desafiadora. Terreno variado com trechos pedregosos. Passa pela Caverna do Capim Açu e Farol da Sapata. Bom condicionamento físico necessário."
+            },
+            {
+                id: 5,
+                nome: "Trilha do Piquinho",
+                descricao: "Trilha íngreme com escaladas em pedras oferecendo vista panorâmica de 360° da ilha do topo do Piquinho.",
+                coordenadas: [-3.8534, -32.4445],
+                dificuldade: "dificil",
+                duracao: "3-4h",
+                distancia: "2.7km",
+                detalhes: "Percurso íngreme com escaladas em rochas. Vista 360° da ilha. Não recomendada para pessoas com dificuldade de locomoção. Contato próximo com fauna e flora local."
+            },
+            {
+                id: 6,
+                nome: "Caminhada Histórica",
+                descricao: "Trilha leve pelos principais pontos históricos da Vila dos Remédios, incluindo forte, igreja e museu.",
+                coordenadas: [-3.8567, -32.4334],
+                dificuldade: "facil",
+                duracao: "3h",
+                distancia: "3km",
+                detalhes: "Percurso tranquilo ideal para famílias. Visita ao Sítio Histórico, Palácio São Miguel, Igreja dos Remédios e Memorial Noronhense. Inclui 3 praias: Cachorro, Meio e Conceição."
+            }
+        ];
+
+        // Inicializar o mapa
+        const map = L.map('map').setView([-3.8536, -32.4297], 12);
+
+        // Adicionar camada de mapa
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Cores para diferentes dificuldades
+        const cores = {
+            facil: '#0ea5e9',
+            moderada: '#f59e0b',
+            dificil: '#ef4444'
+        };
+
+        // Armazenar marcadores
+        let marcadores = [];
+        let trilhaAtiva = null;
+
+        // Função para criar marcadores no mapa
+        function criarMarcadores() {
+            trilhas.forEach(trilha => {
+                const marcador = L.circleMarker(trilha.coordenadas, {
+                    radius: 8,
+                    fillColor: cores[trilha.dificuldade],
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                marcador.bindPopup(`
+                    <div style="font-family: Inter, sans-serif;">
+                        <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 14px;">${trilha.nome}</h3>
+                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 12px;">${trilha.descricao}</p>
+                        <div style="display: flex; gap: 12px; font-size: 11px; color: #64748b;">
+                            <span>⏱️ ${trilha.duracao}</span>
+                            <span>📏 ${trilha.distancia}</span>
+                        </div>
+                    </div>
+                `);
+
+                marcador.on('click', () => {
+                    mostrarInfoPanel(trilha);
+                    destacarTrilha(trilha.id);
+                });
+
+                marcadores.push({ marcador, trilha });
+            });
+        }
+
+        // Função para criar lista de trilhas na sidebar
+        function criarListaTrilhas() {
+            const lista = document.getElementById('trailList');
+            
+            trilhas.forEach(trilha => {
+                const card = document.createElement('div');
+                card.className = 'trail-card';
+                card.dataset.trilhaId = trilha.id;
+                
+                card.innerHTML = `
+                    <div class="trail-name">${trilha.nome}</div>
+                    <div class="trail-description">${trilha.descricao}</div>
+                    <div class="trail-info">
+                        <span>⏱️ ${trilha.duracao}</span>
+                        <span>📏 ${trilha.distancia}</span>
+                        <span class="difficulty ${trilha.dificuldade}">${trilha.dificuldade}</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    map.setView(trilha.coordenadas, 14);
+                    mostrarInfoPanel(trilha);
+                    destacarTrilha(trilha.id);
+                });
+
+                lista.appendChild(card);
+            });
+        }
+
+        // Função para destacar trilha selecionada
+        function destacarTrilha(trilhaId) {
+            // Remover destaque anterior
+            document.querySelectorAll('.trail-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            // Adicionar destaque à trilha selecionada
+            const cardAtivo = document.querySelector(`[data-trilha-id="${trilhaId}"]`);
+            if (cardAtivo) {
+                cardAtivo.classList.add('active');
+            }
+
+            trilhaAtiva = trilhaId;
+        }
+
+        // Função para mostrar painel de informações
+        function mostrarInfoPanel(trilha) {
+            const panel = document.getElementById('infoPanel');
+            const title = document.getElementById('infoPanelTitle');
+            const description = document.getElementById('infoPanelDescription');
+            const details = document.getElementById('infoPanelDetails');
+
+            title.textContent = trilha.nome;
+            description.textContent = trilha.descricao;
+            details.innerHTML = `
+                <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; color: #64748b;">
+                    <span>⏱️ ${trilha.duracao}</span>
+                    <span>📏 ${trilha.distancia}</span>
+                    <span class="difficulty ${trilha.dificuldade}">${trilha.dificuldade}</span>
+                </div>
+                <p style="font-size: 12px; color: #64748b; line-height: 1.4;">${trilha.detalhes}</p>
+            `;
+
+            panel.style.display = 'block';
+        }
+
+        // Função para fechar painel de informações
+        function closeInfoPanel() {
+            document.getElementById('infoPanel').style.display = 'none';
+        }
+
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', () => {
+            criarMarcadores();
+            criarListaTrilhas();
+        });
+    </script>
+</body>
+</html>
+
